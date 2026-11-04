@@ -1,0 +1,21 @@
+# dependencies
+node_modules/
+
+# build output
+frontend/dist/
+frontend/.astro/
+
+# environment
+.env
+.env.*
+
+# uploads / local db / temp
+uploads/
+db/site.db
+Temp/
+
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+" path="/home/andrew/dev/Laser/starstext/.gitignore

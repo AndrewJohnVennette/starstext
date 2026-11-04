@@ -1,0 +1,290 @@
+---
+import Layout from '../layouts/Layout.astro';
+import spaceImage from '../assets/images/newsImages/starun2.webp';
+
+// ─────────────────────────────────────────────────────────────────────────
+// FIX: everything that used to be here (document.querySelector, forEach,
+// template cloning) ran in the Astro *frontmatter*, which executes on the
+// server (this project uses `output: 'server'` in astro.config.mjs). There
+// is no `document` object on the server — that line alone throws
+// "ReferenceError: document is not defined" on every request, and `data`
+// was never defined anywhere either. Fetching the data belongs here
+// (server-side); the DOM/template work has to move to a client <script>
+// tag further down, since that's the only place a `document` exists.
+// ─────────────────────────────────────────────────────────────────────────
+
+// FIX: was hardcoded to http://localhost:3000, which only works when the
+// backend happens to run on that exact host/port — breaks the moment
+// frontend and backend are deployed as separate services (they are; see
+// server.js's commented-out stellarwave-frontend.onrender.com entry).
+// Same env var pepenews.astro already uses.
+const apiBase = import.meta.env.PUBLIC_API_URL ?? 'http://localhost:3000';
+// const apiBase = process.env.API_URL ?? 'http://localhost:3000';
+
+let data = [];
+try {
+    const res = await fetch(`${apiBase}/api/news`);
+    if (res.ok) {
+        const json = await res.json();
+        data = json.news ?? [];
+    } else {
+        console.error('Failed to fetch news:', res.status);
+    }
+} catch (err) {
+    console.error('Error fetching news:', err);
+}
+
+const Name = "StarsText";
+---
+
+<Layout title={Name}>
+    <br><br><br><br>
+    <br><br><br><br>
+
+    <main id="newsSection">
+        <template id="newsPanel">
+            <article class="GEV-showItem-main-container" data-direction="left">
+                <div class="image-area">
+                    <img class="article-Image" src="" alt="" />
+                    <video class="article-Video" muted loop playsinline controls hidden></video>
+                </div>
+                <section class="content-area">
+                    <h2 class="title-cell article-Title"></h2>
+                    <textarea class="text-cell article-Text"></textarea>
+                </section>
+                <aside class="delete-area">
+                    <button type="button" class="delete-btn" title="Delete entry" aria-label="Delete entry">✕</button>
+                </aside>
+            </article>
+        </template>
+    </main>
+</Layout>
+
+<script define:vars={{ data, apiBase }}>
+    // ─────────────────────────────────────────────────────────────────────
+    // FIX: this is the forEach/template-cloning logic, now running client-
+    // side (a real <script> tag) where `document` actually exists. `data`
+    // is injected from the server-fetched value above via define:vars.
+    // ─────────────────────────────────────────────────────────────────────
+    const newsSection = document.querySelector('#newsSection');
+    const template = document.querySelector('#newsPanel');
+
+    // Seed entries ship as bare filenames (e.g. "05Kepler-186f.jpg") that
+    // live in the frontend's own public/images/destinationBlock — those
+    // resolve directly, no network round trip needed. Entries published
+    // through the CMS (pepenews.astro) are uploaded to the BACKEND instead
+    // (images/newsImages there, served at <apiBase>/files/newsImages/<n>)
+    // since the backend is the only piece with a writable, persistent
+    // filesystem in this app's deployment (frontend + backend are separate
+    // services — see server.js). So every image has two possible homes;
+    // we try the frontend path first (cheap, same-origin) and fall back to
+    // the API on 404.
+    //
+    // FIX: this used to be `img.src = '/images/destinationBlock/' + ...`
+    // unconditionally, with no fallback — any image published through the
+    // CMS (which never lands in that frontend folder) silently 404'd. Title
+    // and article text rendered fine regardless, since neither depends on
+    // a file existing, which is exactly why only the image looked broken.
+    const VIDEO_EXTENSIONS = ['mp4', 'webm', 'ogg', 'ogv', 'mov', 'm4v'];
+    function isVideoFile(name) {
+        if (!name) return false;
+        const ext = String(name).split('.').pop().toLowerCase();
+        return VIDEO_EXTENSIONS.includes(ext);
+    }
+
+    if (newsSection && template) {
+        data.forEach((element, index) => {
+            const clone = template.content.cloneNode(true);
+
+            const area = clone.querySelector('.image-area');
+            const imgEl = area.querySelector('.article-Image');
+            const videoEl = area.querySelector('.article-Video');
+            const filename = element.image || 'Sagittarius.webp';
+            const destUrl = `/images/destinationBlock/${filename}`;
+            const apiUrl = `${apiBase}/files/newsImages/${filename}`;
+
+            if (isVideoFile(filename)) {
+                // Videos only ever come from the API — the seed set has no
+                // video entries, so there's no frontend path to try first.
+                imgEl.hidden = true;
+                videoEl.hidden = false;
+                videoEl.src = apiUrl;
+            } else {
+                imgEl.hidden = false;
+                videoEl.hidden = true;
+                imgEl.src = destUrl;
+                imgEl.alt = element.title ?? '';
+                imgEl.addEventListener('error', () => {
+                    if (imgEl.getAttribute('src') !== apiUrl) imgEl.setAttribute('src', apiUrl);
+                }, { once: true });
+            }
+
+            clone.querySelector('h2').textContent = element.title;
+
+            // FIX: use `.value` rather than `.textContent` for the textarea,
+            // matching the working pattern already used in
+            // web-components/GEV-showItems.js — this is what actually
+            // displays as the textarea's content.
+            clone.querySelector('textarea').value = element.article;
+
+            // Alternate left/right layout per card, same as GEV-showItems.js
+            clone.querySelector('article').dataset.direction = index % 2 === 0 ? 'left' : 'right';
+
+            newsSection.appendChild(clone);
+        });
+    }
+</script>
+
+<style>
+    body {
+        display: grid;
+        place-items: center;
+        position: relative;
+        min-height: 100vh;
+    }
+
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: center / 100% 100% no-repeat
+            url(../assets/images/background/new/msh1552.webp);
+        /* opacity: 0.45; */
+        z-index: -1;
+    }
+    
+    /* main {
+        height: auto;
+        width: 100%;
+        margin: 15rem 0 45vh 0;
+    } */
+    .GEV-showItem-main-container {
+        display: grid;
+        min-height: 10vh;
+        width: 90vw;
+        max-width: 1000px;
+        margin: 0 auto 30px auto;
+        border: 2px solid #fff;
+        border-radius: 10%;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        &[data-direction="left"] {
+            /* grid-template-columns: 250px 1fr;
+            grid-template-areas: "img content"; */
+            grid-template-columns: 250px 1fr 3.5rem;   /* was: 250px 1fr */
+            grid-template-areas: "img content del";     /* was: "img content" */
+            & .image-area {
+                border-right: 2px solid black;
+                border-left: none;
+            }
+        }
+        &[data-direction="right"] {
+            /* grid-template-columns: 1fr 250px;
+            grid-template-areas: "content img"; */
+            grid-template-columns: 1fr 250px 3.5rem;    /* was: 1fr 250px */
+            grid-template-areas: "content img del";      /* was: "content img" */
+            & .image-area {
+                border-left: 2px solid #fff;
+                border-right: none;
+            }
+        }
+        & .image-area {
+            grid-area: img;
+            width: 15vw;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #555;
+            font-size: 2em;
+            font-style: italic;
+        }
+        & .image-area img,
+        & .image-area video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        & .image-area img[hidden],
+        & .image-area video[hidden] {
+            display: none;
+        }
+        & .content-area {
+            grid-area: content;
+            display: grid;
+            grid-template-rows: auto 1fr;
+            & .title-cell {
+                padding: 20px 40px;
+                border-bottom: 2px solid black;
+                color: #fff;
+                /* font-size: 3em; */
+                font-size: clamp(2rem, 5vw + 1rem, 2.7rem);
+                font-weight: bold;
+                align-self: end;
+                margin: 0;
+            }
+            & .text-cell {
+                padding: 40px;
+                color: #fff;
+                font-size: 1.5em;
+                align-self: center;
+                width: 100%;
+                height: 100%;
+                border: none;
+                resize: none;
+                background: transparent;
+            }
+        }
+        & .delete-area {
+            /* grid-area: del;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: .75rem;
+            background: rgba(120, 0, 0, .28);
+            border-left: 2px solid rgba(255, 255, 255, .35); */
+            grid-area: del;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: .75rem;
+            background: rgba(120, 0, 0, .28);
+            border-left: 2px solid rgba(255, 255, 255, .35);
+        }
+        & .delete-btn {
+            width: 2.1rem;
+            height: 2.1rem;
+            border-radius: 50%;
+            border: 2px solid #ff6b6b;
+            background: rgba(255, 107, 107, .12);
+            color: #ff6b6b;
+            font-size: 1.1rem;
+            line-height: 1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background .15s ease, color .15s ease, transform .15s ease;
+        }
+        & .delete-btn:hover {
+            background: #ff6b6b;
+            color: #fff;
+            transform: scale(1.08);
+        }
+    }
+    .delete-area {
+        display: none;
+    }
+</style>
+<style is:global>
+    main { width: 100%; }
+</style> 
+<script>
+  // Assuming your web component file is located at /src/scripts/show-data.js
+//   import "../web-components/GEV-showItems.js";
+</script>
