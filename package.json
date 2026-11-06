@@ -1,15 +1,15 @@
 {
   "name": "StarsText",
   "version": "1.0.0",
-  "description": "\"# StellarWave4\"",
+  "description": "\"# StarsText\"",
   "keywords": [],
-  "homepage": "https://github.com/AndrewJohnVennette/StellarWave4#readme",
+  "homepage": "https://github.com/AndrewJohnVennette/StarsText#readme",
   "bugs": {
-    "url": "https://github.com/AndrewJohnVennette/StellarWave4/issues"
+    "url": "https://github.com/AndrewJohnVennette/StarsText/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/AndrewJohnVennette/StellarWave4.git"
+    "url": "git+https://github.com/AndrewJohnVennette/StarsText.git"
   },
   "license": "ISC",
   "author": "",

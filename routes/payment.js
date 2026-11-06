@@ -31,7 +31,7 @@ const stripe = Stripe(process.env.STRIPE_SECRET_KEY);   // sk_test_…
 // Creates a PaymentIntent and returns its client secret to the browser.
 // The browser then calls stripe.confirmCardPayment(clientSecret, cardElement).
 router.post('/create-intent', async (req, res) => {
-    const { email = '', amount = 5000, description = 'Stellarwave Mission' } = req.body;
+    const { email = '', amount = 5000, description = 'StarsText Mission' } = req.body;
 
     // amount must be a positive integer (cents)
     const cents = Math.round(Number(amount));

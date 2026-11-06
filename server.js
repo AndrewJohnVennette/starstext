@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // ── Middleware — ORDER MATTERS ──────────────────────────────────────────────
 
 // const allowedOrigins = [
-//     'https://stellarwave-frontend.onrender.com',
+//     'https://StarsText-frontend.onrender.com',
 //     'http://localhost:4321'
 // ];
 
