@@ -12,7 +12,7 @@ function buildWelcomeEmail(firstName, lastName) {
       <head>
           <meta charset="UTF-8" />
           <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-          <title>Welcome to StarsText 5</title>
+          <title>Welcome to StarsText</title>
           <style>
               /* CSS Variables */
               :root {
@@ -145,7 +145,7 @@ function buildWelcomeEmail(firstName, lastName) {
           <main class="email-card">
               <header class="header">
                   <div class="header-emoji">✨</div>
-                  <h1>Welcome to StarsText 5</h1>
+                  <h1>Welcome to StarsText</h1>
               </header>
 
               <section class="content">
@@ -215,7 +215,7 @@ router.post('/', async (req, res) => {
     from: `${process.env.EMAIL_FROM}`,
     //to: email,
     to:`${process.env.EMAIL_TO}`,
-    subject: 'Welcome to StarsText 5',
+    subject: 'Welcome to StarsText',
     // html: '<p>Congrats on sending your <strong>first email</strong>!</p>'
     html: buildWelcomeEmail(firstName, lastName)
     // text: `Hello ${firstName} ${lastName}, welcome to StarsText!`,
